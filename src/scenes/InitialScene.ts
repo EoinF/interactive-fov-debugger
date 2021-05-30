@@ -1,19 +1,27 @@
-import Phaser from 'phaser';
+import Phaser from "phaser";
+import { addTileMap } from "./addTileMap";
+import { addGridOverlay } from "./addGridOverlay";
 
 export default class InitialScene extends Phaser.Scene {
-    private achoThePup!: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
+  constructor() {
+    super("initial");
+  }
 
-    constructor() {
-        super('initial');
-    }
+  create(): void {
+    const controlsPanelWidth = 100;
 
-    create(): void {
+    const tileSize = 32;
+    const tilesX = Math.floor(
+      (this.cameras.main.width - controlsPanelWidth) / tileSize
+    );
+    const tilesY = Math.floor(this.cameras.main.height / tileSize);
+    const tileMapConfig = {
+      tilesX,
+      tilesY,
+      tileSize,
+    };
 
-        this.add.image(400, 570, 'ground');
-        this.achoThePup = this.physics.add.image(0, 0, 'acho');
-        
-        this.achoThePup.setCollideWorldBounds(true);
-        this.achoThePup.setBounce(1, 1);
-        this.achoThePup.setVelocityX(300);
-    }
+    addTileMap(this, tileMapConfig);
+    addGridOverlay(this, tileMapConfig);
+  }
 }

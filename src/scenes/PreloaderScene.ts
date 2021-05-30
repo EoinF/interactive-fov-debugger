@@ -1,16 +1,15 @@
-import Phaser from 'phaser';
+import Phaser from "phaser";
 
 export default class Preloader extends Phaser.Scene {
-    constructor() {
-        super('preloader');
-    }
+  constructor() {
+    super("preloader");
+  }
 
-    preload(): void {
-        this.load.image('acho', 'assets/acho.png');
-        this.load.image('ground', 'assets/ground.png');
-    }
+  preload(): void {
+    this.load.image("tiles", "assets/tiles.png");
+  }
 
-    create(): void {
-        this.scene.start('initial');
-    }
+  create(): void {
+    this.scene.start("initial");
+  }
 }
