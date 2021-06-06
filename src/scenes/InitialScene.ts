@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { addTileMap } from "./addTileMap";
 import { addGridOverlay } from "./addGridOverlay";
+import { createInputManager } from "../controllers/createInputManager";
 
 export default class InitialScene extends Phaser.Scene {
   constructor() {
@@ -21,7 +22,8 @@ export default class InitialScene extends Phaser.Scene {
       tileSize,
     };
 
-    addTileMap(this, tileMapConfig);
+    const inputManager = createInputManager(this, tileSize);
+    addTileMap(this, tileMapConfig, inputManager);
     addGridOverlay(this, tileMapConfig);
   }
 }

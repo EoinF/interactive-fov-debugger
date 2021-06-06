@@ -11,9 +11,11 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "paulasantamaria",
+  "author": {
+    "name": "Eoin Flanagan",
+    "url": "https://github.com/eoinf"
+  },
   "license": "MIT",
-  "dependencies": {},
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^4.22.1",
     "@typescript-eslint/parser": "^4.22.1",
@@ -21,5 +23,8 @@
     "phaser": "^3.54.0",
     "snowpack": "^3.3.7",
     "typescript": "^4.2.4"
+  },
+  "dependencies": {
+    "rxjs": "^6.6.7"
   }
 }
