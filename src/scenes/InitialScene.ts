@@ -1,7 +1,7 @@
+import { createTilemapController } from "../controllers/tilemapController";
 import Phaser from "phaser";
-import { addTileMap } from "./addTileMap";
-import { addGridOverlay } from "./addGridOverlay";
-import { createInputManager } from "../controllers/createInputManager";
+import { tilemapView } from "../views/tilemapView";
+import { createInputManager } from "../controllers/inputManager";
 
 export default class InitialScene extends Phaser.Scene {
   constructor() {
@@ -16,14 +16,14 @@ export default class InitialScene extends Phaser.Scene {
       (this.cameras.main.width - controlsPanelWidth) / tileSize
     );
     const tilesY = Math.floor(this.cameras.main.height / tileSize);
-    const tileMapConfig = {
+    const tilemapConfig = {
       tilesX,
       tilesY,
       tileSize,
     };
+    const inputManager = createInputManager(this);
+    const tilemapController = createTilemapController(tilemapConfig, inputManager)
 
-    const inputManager = createInputManager(this, tileSize);
-    addTileMap(this, tileMapConfig, inputManager);
-    addGridOverlay(this, tileMapConfig);
+    tilemapView(this, tilemapController);
   }
 }
