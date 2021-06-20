@@ -14,7 +14,10 @@ const config: Phaser.Types.Core.GameConfig = {
         }
     },
     scene: [PreloaderScene, InitialScene],
-    backgroundColor: '#21213B'
+    backgroundColor: '#000000',
 };
 
-export default new Phaser.Game(config);
+const game = new Phaser.Game(config);
+game.canvas.oncontextmenu = function (e) { e.preventDefault(); }
+
+export default game;

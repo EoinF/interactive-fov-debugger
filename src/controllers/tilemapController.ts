@@ -4,7 +4,6 @@ import {
     map,
     share,
     startWith,
-    tap,
     withLatestFrom,
 } from "rxjs/operators";
 import { of } from "rxjs";
@@ -38,7 +37,7 @@ export const createTilemapController = (
     );
 
     const tileChanged$ = clickTile$.pipe(
-        map(tile => ({ tile, type: 1 })),
+        map(tile => ({ tile, type: 3 })),
         share()
     );
 
