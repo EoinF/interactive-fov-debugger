@@ -36,16 +36,17 @@ export const createTilemapController = (
         map(([_, nextTile]) => nextTile)
     );
 
-    const tileChanged$ = clickTile$.pipe(
-        map(tile => ({ tile, type: 3 })),
-        share()
-    );
+    // const tileChanged$ = clickTile$.pipe(
+    //     map(tile => ({ tile, type: 3 })),
+    //     share()
+    // );
 
     const tilemapSize$ = of({ tilesX, tilesY, tileSize }).pipe(share())
 
     return {
-        tileChanged$,
-        tilemapSize$
+        // tileChanged$,
+        tilemapSize$,
+        clickTile$
     }
 };
 
