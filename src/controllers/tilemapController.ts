@@ -1,12 +1,14 @@
-import { InputManager, Vector2 } from "./inputManager";
+import { InputManager } from "./inputManager";
 import {
     distinctUntilChanged,
+    first,
     map,
+    mergeAll,
     share,
     startWith,
     withLatestFrom,
 } from "rxjs/operators";
-import { of } from "rxjs";
+import { combineLatest, merge, of } from "rxjs";
 
 export type TilemapConfig = {
     tilesX: number;
@@ -15,25 +17,30 @@ export type TilemapConfig = {
 };
 
 export const createTilemapController = (
-    { tilesX, tilesY, tileSize }: TilemapConfig,
+    tilemapConfig: TilemapConfig,
     { click$, pointerMove$ }: InputManager
 ) => {
-    const pointerMoveToTile$ = pointerMove$.pipe(
+    const tilemapSize$ = of(tilemapConfig).pipe(share());
+
+    const hoveredTile$ = combineLatest([pointerMove$, tilemapSize$]).pipe(
         map(
-            ({ x, y }) =>
-            ({
-                x: Math.floor(x / tileSize),
-                y: Math.floor(y / tileSize),
-            } as Vector2)
+            ([{ x, y }, {tileSize}]) => new Phaser.Math.Vector2(
+                Math.floor(x / tileSize), Math.floor(y / tileSize)
+            )
         ),
         distinctUntilChanged(
             (next, previous) => next.x === previous.x && next.y === previous.y
         ),
-        startWith({ x: -1, y: -1 } as Vector2)
+        startWith(new Phaser.Math.Vector2(-1, -1))
     );
     const clickTile$ = click$.pipe(
-        withLatestFrom(pointerMoveToTile$),
+        withLatestFrom(hoveredTile$),
         map(([_, nextTile]) => nextTile)
+    );
+
+    const selectedTile$ = merge(
+        clickTile$,
+        tilemapSize$.pipe(first(), map(({tilesX, tilesY}) => { return new Phaser.Math.Vector2(Math.floor(tilesX / 2), Math.floor(tilesY / 2))}))
     );
 
     // const tileChanged$ = clickTile$.pipe(
@@ -41,14 +48,13 @@ export const createTilemapController = (
     //     share()
     // );
 
-    const tilemapSize$ = of({ tilesX, tilesY, tileSize }).pipe(share())
-
     return {
         // tileChanged$,
+        hoveredTile$,
         tilemapSize$,
-        clickTile$
+        clickTile$,
+        selectedTile$
     }
 };
 
 export type TilemapController = ReturnType<typeof createTilemapController>;
-export type TilemapSize$ = ReturnType<typeof createTilemapController>["tilemapSize$"];

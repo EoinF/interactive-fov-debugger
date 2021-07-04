@@ -1,14 +1,9 @@
 import { Observable } from "rxjs";
 
-export type Vector2 = {
-  x: number;
-  y: number;
-};
-
 export function createInputManager(scene: Phaser.Scene) {
   const pointerMove$ = new Observable<Vector2>((subscriber) => {
     scene.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      subscriber.next({ x: pointer.x, y: pointer.y });
+      subscriber.next(new Phaser.Math.Vector2(pointer.x, pointer.y));
     });
   });
 

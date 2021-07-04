@@ -1,6 +1,6 @@
 import { SharedController } from "../controllers/sharedController";
 import { combineLatest, Subject } from "rxjs";
-import { first, map } from "rxjs/operators";
+import { first } from "rxjs/operators";
 import { TilemapController } from "../controllers/tilemapController";
 
 export enum TileType {
@@ -14,10 +14,11 @@ type ViewObjects = {
     tilemap: Phaser.Tilemaps.Tilemap,
     mainLayer: Phaser.Tilemaps.TilemapLayer,
     lightLayer: Phaser.Tilemaps.TilemapLayer,
-    selectionArrow: Phaser.GameObjects.Line,
+    selectionArrow1: Phaser.GameObjects.Line,
+    selectionArrow2: Phaser.GameObjects.Line,
 }
 
-export const tilemapView = (scene: Phaser.Scene, { tilemapSize$ }: TilemapController, { vectorFromSelectedTile$, selectedTilePosition$ }: SharedController) => {
+export const tilemapView = (scene: Phaser.Scene, { tilemapSize$, hoveredTile$, selectedTile$ }: TilemapController, {  }: SharedController) => {
     const viewObjects$ = new Subject<ViewObjects>();
 
     // tileChanged$.pipe(withLatestFrom(viewObjects$)).subscribe(([{ type, tile: { x, y } }, {mainLayer}]) => {
@@ -25,11 +26,39 @@ export const tilemapView = (scene: Phaser.Scene, { tilemapSize$ }: TilemapContro
     // });
     
     combineLatest([
-        selectedTilePosition$,
-        vectorFromSelectedTile$,
-        viewObjects$
-    ]).subscribe(([tile, vec, {selectionArrow}]) => {
-        selectionArrow.setTo(tile.x, tile.y, tile.x + vec.x, tile.y + vec.y);
+        selectedTile$,
+        hoveredTile$,
+        viewObjects$,
+        tilemapSize$,
+    ]).subscribe(([selectedTile, hoveredTile, {selectionArrow1, selectionArrow2}, {tileSize}]) => {
+        const vec = hoveredTile.clone().subtract(selectedTile);
+
+        let corner1X = hoveredTile.x;
+        let corner1Y = hoveredTile.y;
+        let corner2X = hoveredTile.x;
+        let corner2Y = hoveredTile.y;
+        
+        /* These corners are calculated from a truth table of:
+            | vx | vy | x1 | x2 | y1 | y2 |
+            | -1 | -1 |  0 | +1 | +1 |  0 |
+            |  0 | -1 |  0 | +1 | +1 | +1 |
+            | +1 | -1 |  0 | +1 |  0 | +1 |
+            | +1 |  0 |  0 |  0 | +1 |  0 |
+            | +1 | +1 |  0 | +1 | +1 |  0 |
+            |  0 | +1 |  0 | +1 |  0 |  0 |
+            | -1 | +1 |  0 | +1 |  0 | +1 |
+            | -1 |  0 | +1 | +1 |  0 | +1 |
+        */
+        corner1X += (vec.x < 0 && vec.y == 0) ? 1 : 0;
+        corner1Y += (vec.x <= 0 && vec.y < 0) || (vec.x > 0 && vec.y >= 0) ? 1 : 0;
+
+        corner2X += (vec.x <= 0 || vec.y != 0) ? 1 : 0;
+        corner2Y += (vec.x < 0 && vec.y >= 0) || (vec.x >= 0 && vec.y < 0) ? 1 : 0;
+
+        const fromX = (0.5 + selectedTile.x) * tileSize;
+        const fromY = (0.5 + selectedTile.y) * tileSize;
+        selectionArrow1.setTo(fromX, fromY, corner1X * tileSize, corner1Y * tileSize);
+        selectionArrow2.setTo(fromX, fromY, corner2X * tileSize, corner2Y * tileSize);
     });
 
     tilemapSize$.pipe(first()).subscribe((tilemapSize) => {
@@ -81,7 +110,8 @@ const init = (scene: Phaser.Scene, { tilesX, tilesY, tileSize }: any): ViewObjec
         0.2
     );
 
-    const selectionArrow = scene.add.line(0, 0, 0, 0, 0, 0).setStrokeStyle(1, 0xffee55, 0.6);
+    const selectionArrow1 = scene.add.line(0, 0, 0, 0, 0, 0).setStrokeStyle(1, 0xffee55, 0.6);
+    const selectionArrow2 = scene.add.line(0, 0, 0, 0, 0, 0).setStrokeStyle(1, 0xffee55, 0.6);
 
-    return { tilemap, mainLayer, lightLayer, selectionArrow };
+    return { tilemap, mainLayer, lightLayer, selectionArrow1, selectionArrow2 };
 }

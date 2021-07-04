@@ -1,7 +1,7 @@
 import { combineLatest } from "rxjs";
-import { map, tap } from "rxjs/operators";
+import { map } from "rxjs/operators";
 import { InputManager } from "./inputManager";
-import { TilemapConfig, TilemapController } from "./tilemapController";
+import { TilemapController } from "./tilemapController";
 
 export const createSharedController = (inputManager: InputManager, {clickTile$, tilemapSize$}: TilemapController) => {
     const selectedTile$ = clickTile$;
@@ -11,7 +11,7 @@ export const createSharedController = (inputManager: InputManager, {clickTile$, 
         selectedTile$,
     ]).pipe(
         map(
-            ([{tileSize}, tile]) => ({x : (0.5 + tile.x) * tileSize, y : (0.5 + tile.y) * tileSize})
+            ([{tileSize}, tile]) => new Phaser.Math.Vector2((0.5 + tile.x), (0.5 + tile.y)).scale(tileSize)
         )
     );
 
@@ -19,7 +19,7 @@ export const createSharedController = (inputManager: InputManager, {clickTile$, 
         inputManager.pointerMove$,
         selectedTilePosition$,
     ]).pipe(map(([pointer, sourceTile]) => {
-        return {x: pointer.x - sourceTile.x, y: pointer.y - sourceTile.y};
+        return new Phaser.Math.Vector2(pointer.x - sourceTile.x, pointer.y - sourceTile.y);
     }));
 
     const angleFromSelectedTile$ = vectorFromSelectedTile$.pipe(map((vec) => {
