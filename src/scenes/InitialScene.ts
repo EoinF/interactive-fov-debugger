@@ -24,17 +24,27 @@ export default class InitialScene extends Phaser.Scene {
       tileSize,
     };
     const inputManager = createInputManager(this);
-    const tilemapController = createTilemapController(tilemapConfig, inputManager);
-    const sharedController = createSharedController(inputManager, tilemapController);
+    const tilemapController = createTilemapController(
+      tilemapConfig,
+      inputManager
+    );
+    const sharedController = createSharedController(
+      inputManager,
+      tilemapController
+    );
 
-    const controlsPanelWidth = this.cameras.main.width - (tileSize * tilesX);
+    const controlsPanelWidth = this.cameras.main.width - tileSize * tilesX;
 
     tilemapView(this, tilemapController, sharedController);
-    controlsPanelView(this, {
-      x: this.cameras.main.width - controlsPanelWidth,
-      y: 0, 
-      width: controlsPanelWidth, 
-      height: this.cameras.main.height
-    }, sharedController);
+    controlsPanelView(
+      this,
+      {
+        x: this.cameras.main.width - controlsPanelWidth,
+        y: 0,
+        width: controlsPanelWidth,
+        height: this.cameras.main.height,
+      },
+      sharedController
+    );
   }
 }
