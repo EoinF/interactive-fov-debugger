@@ -2,6 +2,7 @@ import Phaser from "phaser";
 
 import PreloaderScene from "./scenes/PreloaderScene";
 import InitialScene from "./scenes/InitialScene";
+import "./views/controlsPanelView";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,

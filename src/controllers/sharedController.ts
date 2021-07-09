@@ -1,16 +1,16 @@
 import { combineLatest } from "rxjs";
-import { map } from "rxjs/operators";
-import { InputManager } from "./inputManager";
+import { map, tap } from "rxjs/operators";
+import { InputManager } from "./inputController";
 import { TilemapController } from "./tilemapController";
 
 export const createSharedController = (
   inputManager: InputManager,
-  { clickTile$, tilemapSize$ }: TilemapController
+  { clickTile$, tilemapConfig$ }: TilemapController
 ) => {
   const selectedTile$ = clickTile$;
 
   const selectedTilePosition$ = combineLatest([
-    tilemapSize$,
+    tilemapConfig$,
     selectedTile$,
   ]).pipe(
     map(([{ tileSize }, tile]) =>

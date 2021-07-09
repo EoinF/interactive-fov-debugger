@@ -20,7 +20,7 @@ type ViewObjects = {
 
 export const tilemapView = (
   scene: Phaser.Scene,
-  { tilemapSize$, hoveredTile$, selectedTile$ }: TilemapController,
+  { tilemapConfig$, hoveredTile$, selectedTile$ }: TilemapController,
   {}: SharedController
 ) => {
   const viewObjects$ = new Subject<ViewObjects>();
@@ -33,7 +33,7 @@ export const tilemapView = (
     selectedTile$,
     hoveredTile$,
     viewObjects$,
-    tilemapSize$,
+    tilemapConfig$,
   ]).subscribe(
     ([
       selectedTile,
@@ -84,8 +84,8 @@ export const tilemapView = (
     }
   );
 
-  tilemapSize$.pipe(first()).subscribe((tilemapSize) => {
-    viewObjects$.next(init(scene, tilemapSize));
+  tilemapConfig$.pipe(first()).subscribe((tilemapConfig) => {
+    viewObjects$.next(init(scene, tilemapConfig));
   });
 };
 

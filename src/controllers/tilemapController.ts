@@ -1,14 +1,12 @@
-import { InputManager } from "./inputManager";
+import { InputManager } from "./inputController";
 import {
   distinctUntilChanged,
   first,
   map,
-  mergeAll,
-  share,
   startWith,
   withLatestFrom,
 } from "rxjs/operators";
-import { combineLatest, merge, of } from "rxjs";
+import { combineLatest, merge, of, ReplaySubject, Subject } from "rxjs";
 
 export type TilemapConfig = {
   tilesX: number;
@@ -16,13 +14,17 @@ export type TilemapConfig = {
   tileSize: number;
 };
 
-export const createTilemapController = (
-  tilemapConfig: TilemapConfig,
-  { click$, pointerMove$ }: InputManager
-) => {
-  const tilemapSize$ = of(tilemapConfig).pipe(share());
+export const createTilemapController = ({
+  click$,
+  pointerMove$,
+}: InputManager) => {
+  const tilemapConfig$ = new ReplaySubject<TilemapConfig>(1);
 
-  const hoveredTile$ = combineLatest([pointerMove$, tilemapSize$]).pipe(
+  const setTilemapConfig = (newConfig: TilemapConfig) => {
+    tilemapConfig$.next(newConfig);
+  };
+
+  const hoveredTile$ = combineLatest([pointerMove$, tilemapConfig$]).pipe(
     map(
       ([{ x, y }, { tileSize }]) =>
         new Phaser.Math.Vector2(
@@ -42,7 +44,7 @@ export const createTilemapController = (
 
   const selectedTile$ = merge(
     clickTile$,
-    tilemapSize$.pipe(
+    tilemapConfig$.pipe(
       first(),
       map(({ tilesX, tilesY }) => {
         return new Phaser.Math.Vector2(
@@ -61,9 +63,10 @@ export const createTilemapController = (
   return {
     // tileChanged$,
     hoveredTile$,
-    tilemapSize$,
+    tilemapConfig$,
     clickTile$,
     selectedTile$,
+    setTilemapConfig,
   };
 };
 
