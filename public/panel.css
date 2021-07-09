@@ -1,4 +1,5 @@
 body {
+  font-family: sans-serif;
   display: flex;
   flex-direction: row-reverse;
   justify-content: center;
@@ -7,4 +8,27 @@ body {
 .container {
   display: flex;
   flex-flow: column nowrap;
+  align-items: center;
+  row-gap: 10px;
+
+  color: white;
+  border: 1px solid black;
+  background: rgb(37, 62, 66);
+  padding: 10px;
+}
+
+.control {
+  display: flex;
+  flex-flow: column nowrap;
+  text-align: center;
+  row-gap: 5px;
+}
+
+.control label {
+  color: #c5b45c;
+  font-weight: bold;
+}
+
+optgroup {
+  font-family: sans-serif;
 }

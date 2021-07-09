@@ -14,8 +14,8 @@ export default class InitialScene extends Phaser.Scene {
   }
 
   init() {
-    const tilesX = Math.floor(800 / tileSize);
-    const tilesY = Math.floor(600 / tileSize);
+    const tilesX = Math.floor(this.cameras.main.width / tileSize);
+    const tilesY = Math.floor(this.cameras.main.height / tileSize);
     tilemapController.setTilemapConfig({
       tilesX,
       tilesY,
