@@ -1,4 +1,4 @@
-import { InputManager } from "./inputController";
+import { InputController } from "./inputController";
 import {
   distinctUntilChanged,
   first,
@@ -17,7 +17,7 @@ export type TilemapConfig = {
 export const createTilemapController = ({
   click$,
   pointerMove$,
-}: InputManager) => {
+}: InputController) => {
   const tilemapConfig$ = new ReplaySubject<TilemapConfig>(1);
 
   const setTilemapConfig = (newConfig: TilemapConfig) => {
@@ -42,17 +42,15 @@ export const createTilemapController = ({
     map(([_, nextTile]) => nextTile)
   );
 
-  const selectedTile$ = merge(
-    clickTile$,
-    tilemapConfig$.pipe(
-      first(),
-      map(({ tilesX, tilesY }) => {
-        return new Phaser.Math.Vector2(
-          Math.floor(tilesX / 2),
-          Math.floor(tilesY / 2)
-        );
-      })
-    )
+  const selectedTile$ = clickTile$;
+
+  const lightSourceTile$ = tilemapConfig$.pipe(
+    map(({ tilesX, tilesY }) => {
+      return new Phaser.Math.Vector2(
+        Math.floor(tilesX / 2),
+        Math.floor(tilesY / 2)
+      );
+    })
   );
 
   // const tileChanged$ = clickTile$.pipe(
@@ -62,6 +60,7 @@ export const createTilemapController = ({
 
   return {
     // tileChanged$,
+    lightSourceTile$,
     hoveredTile$,
     tilemapConfig$,
     clickTile$,

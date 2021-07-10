@@ -1,26 +1,24 @@
 import { combineLatest } from "rxjs";
-import { map, tap } from "rxjs/operators";
-import { InputManager } from "./inputController";
+import { map } from "rxjs/operators";
+import { InputController } from "./inputController";
 import { TilemapController } from "./tilemapController";
 
 export const createSharedController = (
-  inputManager: InputManager,
-  { clickTile$, tilemapConfig$ }: TilemapController
+  inputManager: InputController,
+  { lightSourceTile$, tilemapConfig$ }: TilemapController
 ) => {
-  const selectedTile$ = clickTile$;
-
-  const selectedTilePosition$ = combineLatest([
+  const lightSourcePosition$ = combineLatest([
     tilemapConfig$,
-    selectedTile$,
+    lightSourceTile$,
   ]).pipe(
     map(([{ tileSize }, tile]) =>
       new Phaser.Math.Vector2(0.5 + tile.x, 0.5 + tile.y).scale(tileSize)
     )
   );
 
-  const vectorFromSelectedTile$ = combineLatest([
+  const vectorFromLightSource$ = combineLatest([
     inputManager.pointerMove$,
-    selectedTilePosition$,
+    lightSourcePosition$,
   ]).pipe(
     map(([pointer, sourceTile]) => {
       return new Phaser.Math.Vector2(
@@ -30,16 +28,13 @@ export const createSharedController = (
     })
   );
 
-  const angleFromSelectedTile$ = vectorFromSelectedTile$.pipe(
+  const angleFromSelectedTile$ = vectorFromLightSource$.pipe(
     map((vec) => {
       return Math.atan2(vec.y, vec.x);
     })
   );
 
   return {
-    selectedTile$,
-    selectedTilePosition$,
-    vectorFromSelectedTile$,
     angleFromSelectedTile$,
   };
 };

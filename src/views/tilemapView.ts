@@ -1,7 +1,17 @@
 import { SharedController } from "../controllers/sharedController";
 import { combineLatest, Subject } from "rxjs";
-import { first } from "rxjs/operators";
-import { TilemapController } from "../controllers/tilemapController";
+import {
+  first,
+  map,
+  pairwise,
+  startWith,
+  withLatestFrom,
+} from "rxjs/operators";
+import {
+  TilemapConfig,
+  TilemapController,
+} from "../controllers/tilemapController";
+import { RayLineController } from "../controllers/rayLineController";
 
 export enum TileType {
   LIGHT_OVERLAY = 0,
@@ -10,95 +20,59 @@ export enum TileType {
   FLOOR = 4,
 }
 
-type ViewObjects = {
+type ObjectPools = {
   tilemap: Phaser.Tilemaps.Tilemap;
   mainLayer: Phaser.Tilemaps.TilemapLayer;
   lightLayer: Phaser.Tilemaps.TilemapLayer;
-  selectionArrow1: Phaser.GameObjects.Line;
-  selectionArrow2: Phaser.GameObjects.Line;
+  lines: Phaser.GameObjects.Line[];
 };
 
 export const tilemapView = (
   scene: Phaser.Scene,
-  { tilemapConfig$, hoveredTile$, selectedTile$ }: TilemapController,
-  {}: SharedController
+  { tilemapConfig$, lightSourceTile$ }: TilemapController,
+  { lines$ }: RayLineController
 ) => {
-  const viewObjects$ = new Subject<ViewObjects>();
+  const objectPools$ = new Subject<ObjectPools>();
 
   // tileChanged$.pipe(withLatestFrom(viewObjects$)).subscribe(([{ type, tile: { x, y } }, {mainLayer}]) => {
   //     mainLayer.putTileAt(type, x, y);
   // });
 
   combineLatest([
-    selectedTile$,
-    hoveredTile$,
-    viewObjects$,
-    tilemapConfig$,
-  ]).subscribe(
-    ([
-      selectedTile,
-      hoveredTile,
-      { selectionArrow1, selectionArrow2 },
-      { tileSize },
-    ]) => {
-      const vec = hoveredTile.clone().subtract(selectedTile);
+    objectPools$,
+    lightSourceTile$.pipe(startWith({ x: -1, y: -1 }), pairwise()),
+  ]).subscribe(([{ mainLayer, lightLayer }, [previous, next]]) => {
+    mainLayer.putTileAt(TileType.FLOOR, previous.x, previous.y);
+    lightLayer.putTileAt(TileType.DARK_OVERLAY, previous.x, previous.y);
+    mainLayer.putTileAt(TileType.LIGHT_SOURCE, next.x, next.y);
+    lightLayer.putTileAt(TileType.LIGHT_OVERLAY, next.x, next.y);
+  });
 
-      let corner1X = hoveredTile.x;
-      let corner1Y = hoveredTile.y;
-      let corner2X = hoveredTile.x;
-      let corner2Y = hoveredTile.y;
-
-      /* These corners are calculated from a truth table of:
-            | vx | vy | x1 | x2 | y1 | y2 |
-            | -1 | -1 |  0 | +1 | +1 |  0 |
-            |  0 | -1 |  0 | +1 | +1 | +1 |
-            | +1 | -1 |  0 | +1 |  0 | +1 |
-            | +1 |  0 |  0 |  0 | +1 |  0 |
-            | +1 | +1 |  0 | +1 | +1 |  0 |
-            |  0 | +1 |  0 | +1 |  0 |  0 |
-            | -1 | +1 |  0 | +1 |  0 | +1 |
-            | -1 |  0 | +1 | +1 |  0 | +1 |
-        */
-      corner1X += vec.x < 0 && vec.y == 0 ? 1 : 0;
-      corner1Y +=
-        (vec.x <= 0 && vec.y < 0) || (vec.x > 0 && vec.y >= 0) ? 1 : 0;
-
-      corner2X += vec.x <= 0 || vec.y != 0 ? 1 : 0;
-      corner2Y +=
-        (vec.x < 0 && vec.y >= 0) || (vec.x >= 0 && vec.y < 0) ? 1 : 0;
-
-      const fromX = (0.5 + selectedTile.x) * tileSize;
-      const fromY = (0.5 + selectedTile.y) * tileSize;
-      selectionArrow1.setTo(
-        fromX,
-        fromY,
-        corner1X * tileSize,
-        corner1Y * tileSize
-      );
-      selectionArrow2.setTo(
-        fromX,
-        fromY,
-        corner2X * tileSize,
-        corner2Y * tileSize
-      );
+  combineLatest([objectPools$, lines$.pipe(pairwise())]).subscribe(
+    ([objectPools, [previousLines, nextLines]]) => {
+      const difference = previousLines.length - nextLines.length;
+      for (let i = 0; i < difference; i++) {
+        objectPools.lines[nextLines.length + i].setVisible(false);
+      }
+      nextLines.forEach(({ fromX, fromY, toX, toY }, index) => {
+        objectPools.lines[index].setVisible(true);
+        objectPools.lines[index].setTo(fromX, fromY, toX, toY);
+      });
     }
   );
 
   tilemapConfig$.pipe(first()).subscribe((tilemapConfig) => {
-    viewObjects$.next(init(scene, tilemapConfig));
+    objectPools$.next(init(scene, tilemapConfig));
   });
 };
 
 const init = (
   scene: Phaser.Scene,
-  { tilesX, tilesY, tileSize }: any
-): ViewObjects => {
+  { tilesX, tilesY, tileSize }: TilemapConfig
+): ObjectPools => {
   const emptyMap: number[][] = new Array(tilesY)
     .fill(undefined)
     .map(() => new Array(tilesX).fill(TileType.FLOOR));
-
-  emptyMap[Math.floor(tilesY / 2)][Math.floor(tilesX / 2)] =
-    TileType.LIGHT_SOURCE;
 
   const tilemap = scene.make.tilemap({
     key: "123",
@@ -116,10 +90,6 @@ const init = (
       lightLayer.putTileAt(TileType.DARK_OVERLAY, x, y);
     }
   }
-  const midX = Math.floor(tilesX / 2);
-  const midY = Math.floor(tilesY / 2);
-  mainLayer.putTileAt(TileType.LIGHT_SOURCE, midX, midY);
-  lightLayer.putTileAt(TileType.LIGHT_OVERLAY, midX, midY);
 
   const gridWidth = tilesX * tileSize;
   const gridHeight = tilesY * tileSize;
@@ -137,12 +107,11 @@ const init = (
     0.2
   );
 
-  const selectionArrow1 = scene.add
-    .line(0, 0, 0, 0, 0, 0)
-    .setStrokeStyle(1, 0xffee55, 0.6);
-  const selectionArrow2 = scene.add
-    .line(0, 0, 0, 0, 0, 0)
-    .setStrokeStyle(1, 0xffee55, 0.6);
+  const lines = Array(2)
+    .fill(undefined)
+    .map(() =>
+      scene.add.line(0, 0, 0, 0, 0, 0).setStrokeStyle(1, 0xffee55, 0.6)
+    );
 
-  return { tilemap, mainLayer, lightLayer, selectionArrow1, selectionArrow2 };
+  return { tilemap, mainLayer, lightLayer, lines };
 };

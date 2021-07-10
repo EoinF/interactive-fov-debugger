@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { tilemapView } from "../views/tilemapView";
 import {
   inputController,
-  sharedController,
+  rayLineController,
   tilemapController,
 } from "../controllers/init";
 
@@ -25,6 +25,6 @@ export default class InitialScene extends Phaser.Scene {
   }
 
   create(): void {
-    tilemapView(this, tilemapController, sharedController);
+    tilemapView(this, tilemapController, rayLineController);
   }
 }

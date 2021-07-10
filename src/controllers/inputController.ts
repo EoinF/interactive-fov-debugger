@@ -1,5 +1,4 @@
-import { fromEvent, Observable, Subject } from "rxjs";
-import { tap } from "rxjs/operators";
+import { fromEvent, Observable, ReplaySubject, Subject } from "rxjs";
 import { mapTargetValue } from "../utils";
 
 type LightCastAlgorithm = "RayCast" | "Twincast";
@@ -7,7 +6,7 @@ type LightCastAlgorithm = "RayCast" | "Twincast";
 export function createInputController() {
   const pointerMove$ = new Subject<Vector2>();
   const click$ = new Subject<void>();
-  const algorithm$ = new Subject<LightCastAlgorithm>();
+  const algorithm$ = new ReplaySubject<LightCastAlgorithm>();
 
   const connectToPhaserScene = (scene: Phaser.Scene) => {
     scene.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
@@ -24,6 +23,7 @@ export function createInputController() {
       mapTargetValue
     ) as Observable<LightCastAlgorithm>;
     algorithmChange$.subscribe(algorithm$);
+    algorithm$.next("RayCast");
   };
 
   return {
@@ -35,4 +35,4 @@ export function createInputController() {
   };
 }
 
-export type InputManager = ReturnType<typeof createInputController>;
+export type InputController = ReturnType<typeof createInputController>;
