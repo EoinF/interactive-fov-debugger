@@ -1,18 +1,23 @@
 import { map, throttleTime } from "rxjs/operators";
-import { sharedController } from "../controllers/init";
-const mapToString = map((value: number) => value.toFixed(3));
+import { inputController, sharedController } from "../controllers/init";
+import { mapNumberToString } from "../utils";
 
-const get = (id: string) => {
+const get = <T extends HTMLElement>(id: string): T => {
   const elem = document.getElementById(id);
   if (elem == null) throw new Error(`Couln't find element by id ${id}`);
-  return elem;
+  return elem as T;
 };
+
 sharedController.angleFromSelectedTile$
-  .pipe(mapToString, throttleTime(40))
+  .pipe(mapNumberToString, throttleTime(40))
   .subscribe((text) => {
     get("atan2").innerText = text;
   });
 
-// sharedController.selectedAlgorithm$.pipe(mapToString).subscribe(text => {
+inputController.connectToElements({
+  algorithm: get<HTMLSelectElement>("algorithm"),
+});
 
-// })
+inputController.algorithm$.subscribe((algorithm) => {
+  get<HTMLSelectElement>("algorithm").value = algorithm;
+});
