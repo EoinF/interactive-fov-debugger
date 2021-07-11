@@ -1,20 +1,17 @@
-import { InputController } from "./inputController";
+import { combineLatest, ReplaySubject, Observable } from "rxjs";
 import {
   distinctUntilChanged,
-  first,
   map,
   startWith,
   withLatestFrom,
 } from "rxjs/operators";
-import { combineLatest, merge, of, ReplaySubject, Subject } from "rxjs";
-
-export type TilemapConfig = {
-  tilesX: number;
-  tilesY: number;
-  tileSize: number;
-};
+import { InputController } from "./inputController";
+import { rayCast } from "../rayCast/rayCast";
+import { TilemapConfig, Line } from "../types";
+import { twinCast } from "../twinCast/twinCast";
 
 export const createTilemapController = ({
+  algorithm$,
   click$,
   pointerMove$,
 }: InputController) => {
@@ -53,18 +50,37 @@ export const createTilemapController = ({
     })
   );
 
-  // const tileChanged$ = clickTile$.pipe(
-  //     map(tile => ({ tile, type: 3 })),
-  //     share()
-  // );
+  const { rayCastLines$, rayCastCommands$ } = rayCast(
+    lightSourceTile$,
+    selectedTile$,
+    tilemapConfig$
+  );
+  const { twinCastLines$ } = twinCast(
+    lightSourceTile$,
+    hoveredTile$,
+    tilemapConfig$
+  );
+
+  const lines$: Observable<Line[]> = combineLatest([
+    algorithm$,
+    rayCastLines$,
+    twinCastLines$,
+  ]).pipe(
+    map(([algorithm, rayCast, twinCast]) => {
+      return algorithm === "RayCast" ? rayCast : twinCast;
+    })
+  );
+
+  const tileMapCommands$ = rayCastCommands$;
 
   return {
-    // tileChanged$,
+    tileMapCommands$,
     lightSourceTile$,
     hoveredTile$,
     tilemapConfig$,
     clickTile$,
     selectedTile$,
+    lines$,
     setTilemapConfig,
   };
 };

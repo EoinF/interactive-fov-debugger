@@ -1,17 +1,18 @@
 import { SharedController } from "../controllers/sharedController";
-import { combineLatest, Subject } from "rxjs";
+import { combineLatest, Subject, Observable, of } from "rxjs";
 import {
   first,
   map,
   pairwise,
   startWith,
   withLatestFrom,
+  filter,
+  delay,
+  throttleTime,
+  concatMap,
 } from "rxjs/operators";
-import {
-  TilemapConfig,
-  TilemapController,
-} from "../controllers/tilemapController";
-import { RayLineController } from "../controllers/rayLineController";
+import { TilemapController } from "../controllers/tilemapController";
+import { TilemapConfig, SetLightCommand, LightCastCommand } from "../types";
 
 export enum TileType {
   LIGHT_OVERLAY = 0,
@@ -29,14 +30,26 @@ type ObjectPools = {
 
 export const tilemapView = (
   scene: Phaser.Scene,
-  { tilemapConfig$, lightSourceTile$ }: TilemapController,
-  { lines$ }: RayLineController
+  {
+    tilemapConfig$,
+    lightSourceTile$,
+    lines$,
+    tileMapCommands$,
+  }: TilemapController
 ) => {
   const objectPools$ = new Subject<ObjectPools>();
 
-  // tileChanged$.pipe(withLatestFrom(viewObjects$)).subscribe(([{ type, tile: { x, y } }, {mainLayer}]) => {
-  //     mainLayer.putTileAt(type, x, y);
-  // });
+  tileMapCommands$
+    .pipe(
+      filter(
+        (command): command is SetLightCommand => command.type === "setLight"
+      ),
+      concatMap((x) => of(x).pipe(delay(100))),
+      withLatestFrom(objectPools$)
+    )
+    .subscribe(([{ tileX, tileY }, { lightLayer }]) => {
+      lightLayer.putTileAt(TileType.LIGHT_OVERLAY, tileX, tileY);
+    });
 
   combineLatest([
     objectPools$,
