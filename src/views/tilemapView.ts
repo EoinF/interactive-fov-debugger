@@ -12,7 +12,12 @@ import {
   concatMap,
 } from "rxjs/operators";
 import { TilemapController } from "../controllers/tilemapController";
-import { TilemapConfig, SetLightCommand, LightCastCommand } from "../types";
+import {
+  TilemapConfig,
+  SetLightCommand,
+  LightCastCommand,
+  SetLinesCommand,
+} from "../types";
 
 export enum TileType {
   LIGHT_OVERLAY = 0,
@@ -30,25 +35,41 @@ type ObjectPools = {
 
 export const tilemapView = (
   scene: Phaser.Scene,
-  {
-    tilemapConfig$,
-    lightSourceTile$,
-    lines$,
-    tileMapCommands$,
-  }: TilemapController
+  { tilemapConfig$, lightSourceTile$, tileMapCommands$ }: TilemapController
 ) => {
   const objectPools$ = new Subject<ObjectPools>();
 
+  const emptyTilemap$ = tilemapConfig$.pipe(
+    map(
+      ({ tilesX, tilesY }) =>
+        new Array(tilesY)
+          .fill(undefined)
+          .map(() => new Array(tilesX).fill(TileType.FLOOR)) as number[][]
+    )
+  );
+
   tileMapCommands$
     .pipe(
-      filter(
-        (command): command is SetLightCommand => command.type === "setLight"
-      ),
       concatMap((x) => of(x).pipe(delay(100))),
-      withLatestFrom(objectPools$)
+      withLatestFrom(objectPools$),
+      withLatestFrom(emptyTilemap$)
     )
-    .subscribe(([{ tileX, tileY }, { lightLayer }]) => {
-      lightLayer.putTileAt(TileType.LIGHT_OVERLAY, tileX, tileY);
+    .subscribe(([[command, { lightLayer }], emptyTilemap]) => {
+      switch (command.type) {
+        case "setLight":
+          lightLayer.putTileAt(
+            TileType.LIGHT_OVERLAY,
+            command.tileX,
+            command.tileY
+          );
+          break;
+        case "resetLights":
+          const fullDarkOverlay = emptyTilemap.map((row) =>
+            row.map(() => TileType.DARK_OVERLAY)
+          );
+          lightLayer.putTilesAt(fullDarkOverlay, 0, 0);
+          break;
+      }
     });
 
   combineLatest([
@@ -60,6 +81,14 @@ export const tilemapView = (
     mainLayer.putTileAt(TileType.LIGHT_SOURCE, next.x, next.y);
     lightLayer.putTileAt(TileType.LIGHT_OVERLAY, next.x, next.y);
   });
+
+  const lines$ = tileMapCommands$.pipe(
+    concatMap((x) => of(x).pipe(delay(100))),
+    filter(
+      (command): command is SetLinesCommand => command.type === "setLines"
+    ),
+    map(({ lines }) => lines)
+  );
 
   combineLatest([objectPools$, lines$.pipe(pairwise())]).subscribe(
     ([objectPools, [previousLines, nextLines]]) => {
@@ -74,22 +103,21 @@ export const tilemapView = (
     }
   );
 
-  tilemapConfig$.pipe(first()).subscribe((tilemapConfig) => {
-    objectPools$.next(init(scene, tilemapConfig));
-  });
+  tilemapConfig$
+    .pipe(first(), withLatestFrom(emptyTilemap$))
+    .subscribe(([tilemapConfig, emptyTilemap]) => {
+      objectPools$.next(init(scene, tilemapConfig, emptyTilemap));
+    });
 };
 
 const init = (
   scene: Phaser.Scene,
-  { tilesX, tilesY, tileSize }: TilemapConfig
+  { tilesX, tilesY, tileSize }: TilemapConfig,
+  emptyTilemap: number[][]
 ): ObjectPools => {
-  const emptyMap: number[][] = new Array(tilesY)
-    .fill(undefined)
-    .map(() => new Array(tilesX).fill(TileType.FLOOR));
-
   const tilemap = scene.make.tilemap({
     key: "123",
-    data: emptyMap,
+    data: emptyTilemap,
     tileWidth: tileSize,
     tileHeight: tileSize,
     width: tilesX,
@@ -98,11 +126,11 @@ const init = (
   const tileset = tilemap.addTilesetImage("tiles", undefined, 32, 32, 0, 0);
   const mainLayer = tilemap.createLayer(0, tileset, 0, 0);
   const lightLayer = tilemap.createBlankLayer("lights", tileset, 0, 0);
-  for (let y = 0; y < emptyMap.length; y++) {
-    for (let x = 0; x < emptyMap[y].length; x++) {
-      lightLayer.putTileAt(TileType.DARK_OVERLAY, x, y);
-    }
-  }
+
+  const fullDarkOverlay = emptyTilemap.map((row) =>
+    row.map(() => TileType.DARK_OVERLAY)
+  );
+  lightLayer.putTilesAt(fullDarkOverlay, 0, 0);
 
   const gridWidth = tilesX * tileSize;
   const gridHeight = tilesY * tileSize;

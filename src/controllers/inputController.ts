@@ -1,4 +1,5 @@
 import { fromEvent, Observable, ReplaySubject, Subject } from "rxjs";
+import { Vector2 } from "../types";
 import { mapTargetValue } from "../utils";
 
 type LightCastAlgorithm = "RayCast" | "Twincast";

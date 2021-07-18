@@ -19,8 +19,15 @@ export type SetLightCommand = {
   tileY: number;
 };
 
+export type ResetLightsCommand = {
+  type: "resetLights";
+};
+
 export type SetLinesCommand = {
   type: "setLines";
   lines: Line[];
 };
-export type LightCastCommand = SetLightCommand | SetLinesCommand;
+export type LightCastCommand =
+  | SetLightCommand
+  | SetLinesCommand
+  | ResetLightsCommand;

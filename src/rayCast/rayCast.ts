@@ -1,23 +1,27 @@
-import { combineLatest, generate, Observable } from "rxjs";
-import { endWith, map, switchMap, take } from "rxjs/operators";
-import { LightCastCommand, TilemapConfig, Vector2 } from "../types";
+import { combineLatest, generate, merge, Observable } from "rxjs";
+import { endWith, map, skip, switchMap, take } from "rxjs/operators";
+import {
+  LightCastCommand,
+  ResetLightsCommand,
+  SetLightCommand,
+  TilemapConfig,
+  Vector2,
+  SetLinesCommand,
+} from "../types";
 
 export const rayCast = (
   lightSourceTile$: Observable<Vector2>,
   selectedTile$: Observable<Vector2>,
   tilemapConfig$: Observable<TilemapConfig>
 ) => {
-  const rayCastCommands$: Observable<LightCastCommand> = combineLatest([
+  const setLightCommands$: Observable<SetLightCommand> = combineLatest([
     selectedTile$,
     lightSourceTile$,
     tilemapConfig$,
   ]).pipe(
-    switchMap(([selectedTile, lightSourceTile]) => {
-      console.log("casting line", selectedTile.x, selectedTile.y);
-      return bresenhamLineGenerator$(lightSourceTile, selectedTile).pipe(
-        take(15)
-      );
-    }),
+    switchMap(([selectedTile, lightSourceTile]) =>
+      bresenhamLineGenerator$(lightSourceTile, selectedTile).pipe(take(100))
+    ),
     map(({ x, y }) => {
       return {
         type: "setLight",
@@ -27,11 +31,15 @@ export const rayCast = (
     })
   );
 
-  rayCastCommands$.subscribe((cmd) => {
-    console.log("subbed", cmd);
-  });
+  const resetLightsCommands$: Observable<ResetLightsCommand> =
+    selectedTile$.pipe(
+      skip(1),
+      map(() => ({
+        type: "resetLights",
+      }))
+    );
 
-  const rayCastLines$ = combineLatest([
+  const setLinesCommands$: Observable<SetLinesCommand> = combineLatest([
     lightSourceTile$,
     selectedTile$,
     tilemapConfig$,
@@ -43,11 +51,17 @@ export const rayCast = (
       const fromX = (0.5 + lightSourceTile.x) * tileSize;
       const fromY = (0.5 + lightSourceTile.y) * tileSize;
 
-      return [{ fromX, fromY, toX, toY }];
+      return { type: "setLines", lines: [{ fromX, fromY, toX, toY }] };
     })
   );
 
-  return { rayCastLines$, rayCastCommands$ };
+  const rayCastCommands$: Observable<LightCastCommand> = merge(
+    resetLightsCommands$,
+    setLinesCommands$,
+    setLightCommands$
+  );
+
+  return { rayCastCommands$ };
 };
 
 type BresenhamLineConfig = {

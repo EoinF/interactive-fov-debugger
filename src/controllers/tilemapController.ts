@@ -50,7 +50,7 @@ export const createTilemapController = ({
     })
   );
 
-  const { rayCastLines$, rayCastCommands$ } = rayCast(
+  const { rayCastCommands$ } = rayCast(
     lightSourceTile$,
     selectedTile$,
     tilemapConfig$
@@ -59,16 +59,6 @@ export const createTilemapController = ({
     lightSourceTile$,
     hoveredTile$,
     tilemapConfig$
-  );
-
-  const lines$: Observable<Line[]> = combineLatest([
-    algorithm$,
-    rayCastLines$,
-    twinCastLines$,
-  ]).pipe(
-    map(([algorithm, rayCast, twinCast]) => {
-      return algorithm === "RayCast" ? rayCast : twinCast;
-    })
   );
 
   const tileMapCommands$ = rayCastCommands$;
@@ -80,7 +70,6 @@ export const createTilemapController = ({
     tilemapConfig$,
     clickTile$,
     selectedTile$,
-    lines$,
     setTilemapConfig,
   };
 };
