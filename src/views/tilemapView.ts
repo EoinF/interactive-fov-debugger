@@ -1,23 +1,14 @@
-import { SharedController } from "../controllers/sharedController";
-import { combineLatest, Subject, Observable, of } from "rxjs";
+import { combineLatest, Subject } from "rxjs";
 import {
+  filter,
   first,
   map,
   pairwise,
   startWith,
   withLatestFrom,
-  filter,
-  delay,
-  throttleTime,
-  concatMap,
 } from "rxjs/operators";
 import { TilemapController } from "../controllers/tilemapController";
-import {
-  TilemapConfig,
-  SetLightCommand,
-  LightCastCommand,
-  SetLinesCommand,
-} from "../types";
+import { SetLinesCommand, TilemapConfig } from "../types";
 
 export enum TileType {
   LIGHT_OVERLAY = 0,
@@ -49,11 +40,7 @@ export const tilemapView = (
   );
 
   tileMapCommands$
-    .pipe(
-      concatMap((x) => of(x).pipe(delay(100))),
-      withLatestFrom(objectPools$),
-      withLatestFrom(emptyTilemap$)
-    )
+    .pipe(withLatestFrom(objectPools$), withLatestFrom(emptyTilemap$))
     .subscribe(([[command, { lightLayer }], emptyTilemap]) => {
       switch (command.type) {
         case "setLight":
@@ -83,11 +70,11 @@ export const tilemapView = (
   });
 
   const lines$ = tileMapCommands$.pipe(
-    concatMap((x) => of(x).pipe(delay(100))),
     filter(
       (command): command is SetLinesCommand => command.type === "setLines"
     ),
-    map(({ lines }) => lines)
+    map(({ lines }) => lines),
+    startWith([])
   );
 
   combineLatest([objectPools$, lines$.pipe(pairwise())]).subscribe(

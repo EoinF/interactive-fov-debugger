@@ -1,13 +1,18 @@
-import { combineLatest, ReplaySubject, Observable } from "rxjs";
+import { combineLatest, ReplaySubject, Observable, of } from "rxjs";
 import {
   distinctUntilChanged,
   map,
   startWith,
   withLatestFrom,
+  switchMap,
+  share,
+  concatMap,
+  delay,
+  tap,
 } from "rxjs/operators";
 import { InputController } from "./inputController";
 import { rayCast } from "../rayCast/rayCast";
-import { TilemapConfig, Line } from "../types";
+import { TilemapConfig, LightCastCommand } from "../types";
 import { twinCast } from "../twinCast/twinCast";
 
 export const createTilemapController = ({
@@ -55,13 +60,20 @@ export const createTilemapController = ({
     selectedTile$,
     tilemapConfig$
   );
-  const { twinCastLines$ } = twinCast(
+  const { twinCastCommands$ } = twinCast(
     lightSourceTile$,
-    hoveredTile$,
+    selectedTile$,
     tilemapConfig$
   );
 
-  const tileMapCommands$ = rayCastCommands$;
+  const tileMapCommands$: Observable<LightCastCommand> = algorithm$.pipe(
+    switchMap((algorithm) => {
+      const commands$ =
+        algorithm === "RayCast" ? rayCastCommands$ : twinCastCommands$;
+      return commands$.pipe(concatMap((x) => of(x).pipe(delay(100))));
+    }),
+    share()
+  );
 
   return {
     tileMapCommands$,

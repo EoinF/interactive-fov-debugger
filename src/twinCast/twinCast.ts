@@ -1,24 +1,29 @@
-import { combineLatest, Observable } from "rxjs";
+import { combineLatest, Observable, of } from "rxjs";
 import { map } from "rxjs/operators";
-import { Vector2, TilemapConfig } from "../types";
+import {
+  Vector2,
+  TilemapConfig,
+  LightCastCommand,
+  SetLinesCommand,
+} from "../types";
 
 export const twinCast = (
   lightSourceTile$: Observable<Vector2>,
-  hoveredTile$: Observable<Vector2>,
+  selectedTile$: Observable<Vector2>,
   tilemapConfig$: Observable<TilemapConfig>
 ) => {
-  const twinCastLines$ = combineLatest([
+  const setLinesCommands$: Observable<SetLinesCommand> = combineLatest([
     lightSourceTile$,
-    hoveredTile$,
+    selectedTile$,
     tilemapConfig$,
   ]).pipe(
-    map(([lightSourceTile, hoveredTile, { tileSize }]) => {
-      const vec = hoveredTile.clone().subtract(lightSourceTile);
+    map(([lightSourceTile, tile, { tileSize }]) => {
+      const vec = tile.clone().subtract(lightSourceTile);
 
-      let corner1X = hoveredTile.x;
-      let corner1Y = hoveredTile.y;
-      let corner2X = hoveredTile.x;
-      let corner2Y = hoveredTile.y;
+      let corner1X = tile.x;
+      let corner1Y = tile.y;
+      let corner2X = tile.x;
+      let corner2Y = tile.y;
 
       /* These corners are calculated from a truth table of:
               | vx | vy | x1 | x2 | y1 | y2 |
@@ -42,14 +47,19 @@ export const twinCast = (
       const fromX = (0.5 + lightSourceTile.x) * tileSize;
       const fromY = (0.5 + lightSourceTile.y) * tileSize;
 
-      return [
-        { fromX, fromY, toX: corner1X * tileSize, toY: corner1Y * tileSize },
-        { fromX, fromY, toX: corner2X * tileSize, toY: corner2Y * tileSize },
-      ];
+      return {
+        type: "setLines",
+        lines: [
+          { fromX, fromY, toX: corner1X * tileSize, toY: corner1Y * tileSize },
+          { fromX, fromY, toX: corner2X * tileSize, toY: corner2Y * tileSize },
+        ],
+      };
     })
   );
 
+  const twinCastCommands$: Observable<LightCastCommand> = setLinesCommands$;
+
   return {
-    twinCastLines$,
+    twinCastCommands$,
   };
 };

@@ -7,7 +7,7 @@ type LightCastAlgorithm = "RayCast" | "Twincast";
 export function createInputController() {
   const pointerMove$ = new Subject<Vector2>();
   const click$ = new Subject<void>();
-  const algorithm$ = new ReplaySubject<LightCastAlgorithm>();
+  const algorithm$ = new ReplaySubject<LightCastAlgorithm>(1);
 
   const connectToPhaserScene = (scene: Phaser.Scene) => {
     scene.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
