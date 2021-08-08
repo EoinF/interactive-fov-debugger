@@ -66,12 +66,7 @@ export const rayCast = (
   const resetLightsCommands$: Observable<ResetLightsCommand> = merge(
     of({
       type: "resetLights",
-    } as ResetLightsCommand),
-    selectedTile$.pipe(
-      mapTo({
-        type: "resetLights",
-      } as ResetLightsCommand)
-    )
+    } as ResetLightsCommand)
   );
 
   const setLinesCommands$: Observable<SetLinesCommand> = combineLatest([

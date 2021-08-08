@@ -9,11 +9,12 @@ import {
   startWith,
   switchMap,
   takeWhile,
+  tap,
   withLatestFrom,
 } from "rxjs/operators";
 import { rayCast } from "../rayCast/rayCast";
 import { twinCast } from "../twinCast/twinCast";
-import { LightCastCommand, TilemapConfig } from "../types";
+import { LightCastCommand, ResetLightsCommand, TilemapConfig } from "../types";
 import { InputController } from "./inputController";
 import { PlaybackController } from "./playbackController";
 
@@ -69,18 +70,20 @@ export const createTilemapController = (
   );
 
   const tileMapCommands$: Observable<LightCastCommand> = algorithm$.pipe(
-    switchMap((algorithm) =>
-      algorithm === "RayCast" ? rayCastCommands$ : twinCastCommands$
-    )
-  );
+    switchMap((algorithm) => {
+      const commands$ =
+        algorithm === "RayCast" ? rayCastCommands$ : twinCastCommands$;
 
-  const nextCommand$ = zip(tickForward$, tileMapCommands$).pipe(
-    map(([_, command]) => command),
+      return zip(tickForward$, commands$).pipe(
+        map(([_, command]) => command),
+        startWith({ type: "resetLights" } as ResetLightsCommand)
+      );
+    }),
     share()
   );
 
   return {
-    nextCommand$,
+    nextCommand$: tileMapCommands$,
     lightSourceTile$,
     hoveredTile$,
     tilemapConfig$,

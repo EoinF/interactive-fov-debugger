@@ -1,15 +1,15 @@
 import { interval, merge, of } from "rxjs";
-import { mapTo, startWith, switchMap } from "rxjs/operators";
+import { mapTo, shareReplay, startWith, switchMap } from "rxjs/operators";
 import { InputController } from "./inputController";
 
 export function createPlaybackController({ play$, pause$ }: InputController) {
   const isPlaying$ = merge(
     play$.pipe(mapTo(true)),
     pause$.pipe(mapTo(false))
-  ).pipe(startWith(false));
+  ).pipe(startWith(false), shareReplay());
 
   const tickForward$ = isPlaying$.pipe(
-    switchMap((isPlaying) => (isPlaying ? interval(150) : of<void>()))
+    switchMap((isPlaying) => (isPlaying ? interval(100) : of<void>()))
   );
 
   return { tickForward$ };

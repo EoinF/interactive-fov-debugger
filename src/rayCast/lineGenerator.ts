@@ -1,14 +1,5 @@
-import {
-  asapScheduler,
-  asyncScheduler,
-  defer,
-  generate,
-  Observable,
-  queueScheduler,
-} from "rxjs";
-import { AsyncScheduler } from "rxjs/internal/scheduler/AsyncScheduler";
-import { QueueScheduler } from "rxjs/internal/scheduler/QueueScheduler";
-import { endWith, map } from "rxjs/operators";
+import { generate, Observable } from "rxjs";
+import { endWith } from "rxjs/operators";
 import { Vector2 } from "../types";
 
 type BresenhamLineConfig = {
@@ -33,7 +24,7 @@ const getBresenhamLineConfig = (
   const deltaX = Math.abs(toX - fromX);
   const deltaY = Math.abs(toY - fromY);
 
-  const xStep = fromY > toX ? -1 : 1;
+  const xStep = fromX > toX ? -1 : 1;
   const yStep = fromY > toY ? -1 : 1;
 
   return {
