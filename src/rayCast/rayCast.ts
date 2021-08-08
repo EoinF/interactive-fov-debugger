@@ -1,12 +1,14 @@
-import { combineLatest, generate, merge, Observable, of } from "rxjs";
+import { combineLatest, from, merge, Observable, of, Subject } from "rxjs";
 import {
-  endWith,
   map,
-  skip,
   switchMap,
   take,
   mapTo,
   tap,
+  concatMap,
+  withLatestFrom,
+  shareReplay,
+  mergeMap,
 } from "rxjs/operators";
 import {
   LightCastCommand,
@@ -23,22 +25,42 @@ export const rayCast = (
   selectedTile$: Observable<Vector2>,
   tilemapConfig$: Observable<TilemapConfig>
 ) => {
-  const setLightCommands$: Observable<SetLightCommand> = combineLatest([
-    selectedTile$,
-    lightSourceTile$,
-    tilemapConfig$,
-  ]).pipe(
-    switchMap(([selectedTile, lightSourceTile]) =>
-      lineGenerator(lightSourceTile, selectedTile).pipe(take(100))
-    ),
+  const rayCastLines$: Observable<Vector2> = lightSourceTile$.pipe(
+    switchMap((lightSourceTile) => {
+      const lines: Vector2[] = [];
+      const range = 5;
+      for (let i = -range; i <= +range; i++) {
+        const destTile = lightSourceTile.clone().add({ x: i, y: -range });
+        lines.push(destTile);
+      }
+      for (let j = -range + 1; j < range; j++) {
+        const destTile = lightSourceTile.clone().add({ x: -range, y: j });
+        lines.push(destTile);
+      }
+      for (let i = -range; i <= +range; i++) {
+        const destTile = lightSourceTile.clone().add({ x: i, y: +range });
+        lines.push(destTile);
+      }
+      for (let j = -range + 1; j < range; j++) {
+        const destTile = lightSourceTile.clone().add({ x: +range, y: j });
+        lines.push(destTile);
+      }
+      return from(lines);
+    })
+  );
+
+  const setLightCommands$: Observable<SetLightCommand> = rayCastLines$.pipe(
+    withLatestFrom(lightSourceTile$),
+    concatMap(([destTile, lightSourceTile]) => {
+      return lineGenerator(lightSourceTile, destTile).pipe(take(100));
+    }),
     map(({ x, y }) => {
       return {
         type: "setLight",
         tileX: x,
         tileY: y,
       };
-    }),
-    tap(console.log)
+    })
   );
 
   const resetLightsCommands$: Observable<ResetLightsCommand> = merge(

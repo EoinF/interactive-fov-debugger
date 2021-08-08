@@ -1,4 +1,13 @@
-import { generate, Observable } from "rxjs";
+import {
+  asapScheduler,
+  asyncScheduler,
+  defer,
+  generate,
+  Observable,
+  queueScheduler,
+} from "rxjs";
+import { AsyncScheduler } from "rxjs/internal/scheduler/AsyncScheduler";
+import { QueueScheduler } from "rxjs/internal/scheduler/QueueScheduler";
 import { endWith, map } from "rxjs/operators";
 import { Vector2 } from "../types";
 
@@ -43,7 +52,7 @@ export const lineGenerator = (
 ): Observable<{ x: number; y: number }> => {
   const { startState, deltaX, deltaY, xStep, yStep, isSteep } =
     getBresenhamLineConfig(from, to);
-  console.log(`line from ${from.x},${from.y} to ${to.x},${to.y}`);
+  // console.log(`line from ${from.x},${from.y} to ${to.x},${to.y}`);
 
   const compareSteep = ({ x }: { x: number }) => x != to.y;
 
@@ -51,17 +60,19 @@ export const lineGenerator = (
 
   const shouldContinue = isSteep ? compareSteep : compareNormal;
 
-  return generate(startState, shouldContinue, ({ x, y, error }) => {
-    let currentY = y;
-    error -= deltaY;
-    if (error < 0) {
-      currentY += yStep;
-      error += deltaX;
-    }
+  return generate(
+    startState,
+    shouldContinue,
+    ({ x, y, error }) => {
+      let currentY = y;
+      error -= deltaY;
+      if (error < 0) {
+        currentY += yStep;
+        error += deltaX;
+      }
 
-    return { x: x + xStep, y: currentY, error };
-  }).pipe(
-    map(({ x, y }) => (isSteep ? { x: y, y: x } : { x, y })),
-    endWith({ x: to.x, y: to.y })
-  );
+      return { x: x + xStep, y: currentY, error };
+    },
+    ({ x, y }) => (isSteep ? { x: y, y: x } : { x, y })
+  ).pipe(endWith({ x: to.x, y: to.y }));
 };
