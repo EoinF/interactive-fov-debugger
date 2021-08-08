@@ -63,12 +63,6 @@ export const rayCast = (
     })
   );
 
-  const resetLightsCommands$: Observable<ResetLightsCommand> = merge(
-    of({
-      type: "resetLights",
-    } as ResetLightsCommand)
-  );
-
   const setLinesCommands$: Observable<SetLinesCommand> = combineLatest([
     lightSourceTile$,
     selectedTile$,
@@ -86,7 +80,6 @@ export const rayCast = (
   );
 
   const rayCastCommands$: Observable<LightCastCommand> = merge(
-    resetLightsCommands$,
     setLinesCommands$,
     setLightCommands$
   );

@@ -94,8 +94,8 @@ const init = (
     );
 
   const highlightSquare = scene.add.rectangle(
-    tileSize / 2,
-    tileSize / 2,
+    -99999,
+    -99999,
     tileSize,
     tileSize,
     0xffff00,

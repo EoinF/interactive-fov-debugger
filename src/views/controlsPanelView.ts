@@ -18,6 +18,7 @@ inputController.connectToElements({
   algorithm: get<HTMLSelectElement>("algorithm"),
   play: get<HTMLElement>("play"),
   pause: get<HTMLElement>("pause"),
+  playbackSpeed: get<HTMLInputElement>("playbackSpeed"),
 });
 
 inputController.algorithm$.subscribe((algorithm) => {
