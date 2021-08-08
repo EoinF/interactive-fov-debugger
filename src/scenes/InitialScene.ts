@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { tilemapView } from "../views/tilemapView";
 import { inputController, tilemapController } from "../controllers/init";
+import { overlayView } from "../views/overlayView";
 
 const tileSize = 32;
 
@@ -22,5 +23,6 @@ export default class InitialScene extends Phaser.Scene {
 
   create(): void {
     tilemapView(this, tilemapController);
+    overlayView(this, tilemapController);
   }
 }

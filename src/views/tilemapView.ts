@@ -21,12 +21,11 @@ type ObjectPools = {
   tilemap: Phaser.Tilemaps.Tilemap;
   mainLayer: Phaser.Tilemaps.TilemapLayer;
   lightLayer: Phaser.Tilemaps.TilemapLayer;
-  lines: Phaser.GameObjects.Line[];
 };
 
 export const tilemapView = (
   scene: Phaser.Scene,
-  { tilemapConfig$, lightSourceTile$, tileMapCommands$ }: TilemapController
+  { tilemapConfig$, lightSourceTile$, nextCommand$ }: TilemapController
 ) => {
   const objectPools$ = new Subject<ObjectPools>();
 
@@ -39,7 +38,7 @@ export const tilemapView = (
     )
   );
 
-  tileMapCommands$
+  nextCommand$
     .pipe(withLatestFrom(objectPools$), withLatestFrom(emptyTilemap$))
     .subscribe(([[command, { lightLayer }], emptyTilemap]) => {
       switch (command.type) {
@@ -68,27 +67,6 @@ export const tilemapView = (
     mainLayer.putTileAt(TileType.LIGHT_SOURCE, next.x, next.y);
     lightLayer.putTileAt(TileType.LIGHT_OVERLAY, next.x, next.y);
   });
-
-  const lines$ = tileMapCommands$.pipe(
-    filter(
-      (command): command is SetLinesCommand => command.type === "setLines"
-    ),
-    map(({ lines }) => lines),
-    startWith([])
-  );
-
-  combineLatest([objectPools$, lines$.pipe(pairwise())]).subscribe(
-    ([objectPools, [previousLines, nextLines]]) => {
-      const difference = previousLines.length - nextLines.length;
-      for (let i = 0; i < difference; i++) {
-        objectPools.lines[nextLines.length + i].setVisible(false);
-      }
-      nextLines.forEach(({ fromX, fromY, toX, toY }, index) => {
-        objectPools.lines[index].setVisible(true);
-        objectPools.lines[index].setTo(fromX, fromY, toX, toY);
-      });
-    }
-  );
 
   tilemapConfig$
     .pipe(first(), withLatestFrom(emptyTilemap$))
@@ -119,27 +97,5 @@ const init = (
   );
   lightLayer.putTilesAt(fullDarkOverlay, 0, 0);
 
-  const gridWidth = tilesX * tileSize;
-  const gridHeight = tilesY * tileSize;
-
-  scene.add.grid(
-    gridWidth / 2,
-    gridHeight / 2,
-    gridWidth,
-    gridHeight,
-    tileSize,
-    tileSize,
-    0xffffff,
-    0,
-    0x0,
-    0.2
-  );
-
-  const lines = Array(2)
-    .fill(undefined)
-    .map(() =>
-      scene.add.line(0, 0, 0, 0, 0, 0).setStrokeStyle(1, 0xffee55, 0.6)
-    );
-
-  return { tilemap, mainLayer, lightLayer, lines };
+  return { tilemap, mainLayer, lightLayer };
 };

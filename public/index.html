@@ -15,16 +15,40 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <script type="module" src="/dist/Main.js"></script>
     <div class="container">
-      <div class="control">
-        <label>atan2</label>
-        <div id="atan2">-</div>
+      <!-- Main controls -->
+      <div class="controlsContainer">
+        <div class="control">
+          <label>Algorithm</label>
+          <select id="algorithm" value="test">
+            <option>RayCast</option>
+            <option>TwinCast</option>
+          </select>
+        </div>
+        <div class="control">
+          <label>Playback options</label>
+          <div
+            style="
+              display: flex;
+              flex-direction: row;
+              justify-content: center;
+              column-gap: 5px;
+            "
+          >
+            <button id="play">Play</button>
+            <button id="pause">Pause</button>
+          </div>
+        </div>
+        <div class="control">
+          <label>Playback speed</label>
+          <input type="range" />
+        </div>
       </div>
-      <div class="control">
-        <label>Algorithm</label>
-        <select id="algorithm" value="test">
-          <option>RayCast</option>
-          <option>TwinCast</option>
-        </select>
+      <!-- Useful values -->
+      <div>
+        <div class="control">
+          <label>atan2</label>
+          <div id="atan2">-</div>
+        </div>
       </div>
     </div>
   </body>

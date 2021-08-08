@@ -7,14 +7,22 @@ body {
 
 .container {
   display: flex;
-  flex-flow: column nowrap;
-  align-items: center;
-  row-gap: 10px;
+  min-height: 100%;
+  flex-direction: column;
+  align-content: space-between;
 
   color: white;
   border: 1px solid black;
   background: #01454c;
   padding: 10px;
+}
+
+.controlsContainer {
+  flex: 1;
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: center;
+  row-gap: 10px;
 }
 
 .control {

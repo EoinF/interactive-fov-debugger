@@ -16,6 +16,8 @@ sharedController.angleFromSelectedTile$
 
 inputController.connectToElements({
   algorithm: get<HTMLSelectElement>("algorithm"),
+  play: get<HTMLElement>("play"),
+  pause: get<HTMLElement>("pause"),
 });
 
 inputController.algorithm$.subscribe((algorithm) => {

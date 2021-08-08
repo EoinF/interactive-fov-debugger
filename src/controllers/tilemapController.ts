@@ -1,4 +1,4 @@
-import { combineLatest, Observable, of, ReplaySubject } from "rxjs";
+import { combineLatest, Observable, of, ReplaySubject, zip } from "rxjs";
 import {
   concatMap,
   delay,
@@ -8,18 +8,19 @@ import {
   shareReplay,
   startWith,
   switchMap,
+  takeWhile,
   withLatestFrom,
 } from "rxjs/operators";
 import { rayCast } from "../rayCast/rayCast";
 import { twinCast } from "../twinCast/twinCast";
 import { LightCastCommand, TilemapConfig } from "../types";
 import { InputController } from "./inputController";
+import { PlaybackController } from "./playbackController";
 
-export const createTilemapController = ({
-  algorithm$,
-  click$,
-  pointerMove$,
-}: InputController) => {
+export const createTilemapController = (
+  { algorithm$, click$, pointerMove$ }: InputController,
+  { tickForward$ }: PlaybackController
+) => {
   const tilemapConfig$ = new ReplaySubject<TilemapConfig>(1);
 
   const setTilemapConfig = (newConfig: TilemapConfig) => {
@@ -39,6 +40,7 @@ export const createTilemapController = ({
     ),
     startWith(new Phaser.Math.Vector2(-1, -1))
   );
+
   const clickTile$ = click$.pipe(
     withLatestFrom(hoveredTile$),
     map(([_, nextTile]) => nextTile)
@@ -67,17 +69,18 @@ export const createTilemapController = ({
   );
 
   const tileMapCommands$: Observable<LightCastCommand> = algorithm$.pipe(
-    switchMap((algorithm) => {
-      const commands$ =
-        algorithm === "RayCast" ? rayCastCommands$ : twinCastCommands$;
+    switchMap((algorithm) =>
+      algorithm === "RayCast" ? rayCastCommands$ : twinCastCommands$
+    )
+  );
 
-      return commands$.pipe(concatMap((x) => of(x).pipe(delay(100))));
-    }),
+  const nextCommand$ = zip(tickForward$, tileMapCommands$).pipe(
+    map(([_, command]) => command),
     share()
   );
 
   return {
-    tileMapCommands$,
+    nextCommand$,
     lightSourceTile$,
     hoveredTile$,
     tilemapConfig$,
