@@ -1,15 +1,10 @@
-import { combineLatest, Observable, of, ReplaySubject, zip } from "rxjs";
+import { combineLatest, iif, Observable, ReplaySubject, zip } from "rxjs";
 import {
-  concatMap,
-  delay,
   distinctUntilChanged,
   map,
   share,
-  shareReplay,
   startWith,
   switchMap,
-  takeWhile,
-  tap,
   withLatestFrom,
 } from "rxjs/operators";
 import { rayCast } from "../rayCast/rayCast";
@@ -20,7 +15,7 @@ import { PlaybackController } from "./playbackController";
 
 export const createTilemapController = (
   { algorithm$, click$, pointerMove$ }: InputController,
-  { tickForward$ }: PlaybackController
+  { tick$ }: PlaybackController
 ) => {
   const tilemapConfig$ = new ReplaySubject<TilemapConfig>(1);
 
@@ -71,10 +66,13 @@ export const createTilemapController = (
 
   const tileMapCommands$: Observable<LightCastCommand> = algorithm$.pipe(
     switchMap((algorithm) => {
-      const commands$ =
-        algorithm === "RayCast" ? rayCastCommands$ : twinCastCommands$;
+      const commands$ = iif(
+        () => algorithm === "RayCast",
+        rayCastCommands$,
+        twinCastCommands$
+      );
 
-      return zip(tickForward$, commands$).pipe(
+      return zip(tick$, commands$).pipe(
         map(([_, command]) => command),
         startWith({ type: "resetLights" } as ResetLightsCommand)
       );
