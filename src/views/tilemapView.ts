@@ -41,6 +41,7 @@ export const tilemapView = (
   nextCommand$
     .pipe(withLatestFrom(objectPools$), withLatestFrom(emptyTilemap$))
     .subscribe(([[command, { lightLayer }], emptyTilemap]) => {
+      console.log("next command", command);
       switch (command.type) {
         case "setLight":
           lightLayer.putTileAt(

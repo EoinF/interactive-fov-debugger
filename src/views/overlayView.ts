@@ -7,7 +7,6 @@ import {
   startWith,
   withLatestFrom,
 } from "rxjs/operators";
-import { PlaybackController } from "../controllers/playbackController";
 import { TilemapController } from "../controllers/tilemapController";
 import { SetLightCommand, SetLinesCommand, TilemapConfig } from "../types";
 

@@ -1,29 +1,27 @@
-import { combineLatest, Observable, of } from "rxjs";
-import { map } from "rxjs/operators";
+import { Observable, of } from "rxjs";
+import { map, toArray } from "rxjs/operators";
 import {
-  Vector2,
-  TilemapConfig,
   LightCastCommand,
   SetLinesCommand,
+  TilemapConfig,
+  Vector2,
 } from "../types";
 
 export const twinCast = (
-  lightSourceTile$: Observable<Vector2>,
-  selectedTile$: Observable<Vector2>,
-  tilemapConfig$: Observable<TilemapConfig>
+  lightSourceTile: Vector2,
+  { tileSize }: TilemapConfig
 ) => {
-  const setLinesCommands$: Observable<SetLinesCommand> = combineLatest([
-    lightSourceTile$,
-    selectedTile$,
-    tilemapConfig$,
-  ]).pipe(
-    map(([lightSourceTile, tile, { tileSize }]) => {
-      const vec = tile.clone().subtract(lightSourceTile);
+  const setLinesCommands$: Observable<SetLinesCommand> = of(
+    lightSourceTile
+  ).pipe(
+    map((from) => {
+      const to = new Phaser.Math.Vector2(4, 3);
+      const vec = to.clone().subtract(from);
 
-      let corner1X = tile.x;
-      let corner1Y = tile.y;
-      let corner2X = tile.x;
-      let corner2Y = tile.y;
+      let corner1X = to.x;
+      let corner1Y = to.y;
+      let corner2X = to.x;
+      let corner2Y = to.y;
 
       /* These corners are calculated from a truth table of:
               | vx | vy | x1 | x2 | y1 | y2 |
@@ -57,9 +55,8 @@ export const twinCast = (
     })
   );
 
-  const twinCastCommands$: Observable<LightCastCommand> = setLinesCommands$;
+  const twinCastCommands$: Observable<LightCastCommand[]> =
+    setLinesCommands$.pipe(toArray());
 
-  return {
-    twinCastCommands$,
-  };
+  return twinCastCommands$;
 };

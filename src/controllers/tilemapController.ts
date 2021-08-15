@@ -1,7 +1,10 @@
-import { combineLatest, iif, Observable, ReplaySubject, zip } from "rxjs";
+import { combineLatest, Observable, ReplaySubject } from "rxjs";
 import {
   distinctUntilChanged,
+  filter,
   map,
+  mapTo,
+  scan,
   share,
   startWith,
   switchMap,
@@ -9,7 +12,7 @@ import {
 } from "rxjs/operators";
 import { rayCast } from "../rayCast/rayCast";
 import { twinCast } from "../twinCast/twinCast";
-import { LightCastCommand, ResetLightsCommand, TilemapConfig } from "../types";
+import { LightCastCommand, TilemapConfig } from "../types";
 import { InputController } from "./inputController";
 import { PlaybackController } from "./playbackController";
 
@@ -53,35 +56,57 @@ export const createTilemapController = (
     })
   );
 
-  const { rayCastCommands$ } = rayCast(
+  const tileMapCommands$: Observable<LightCastCommand[]> = combineLatest([
+    algorithm$,
     lightSourceTile$,
-    selectedTile$,
-    tilemapConfig$
-  );
-  const { twinCastCommands$ } = twinCast(
-    lightSourceTile$,
-    selectedTile$,
-    tilemapConfig$
+    tilemapConfig$,
+  ]).pipe(
+    switchMap(([algorithm, lightSourceTile, tilemapConfig]) => {
+      console.log("commands switch to", algorithm);
+      return algorithm === "RayCast"
+        ? rayCast(lightSourceTile, tilemapConfig)
+        : twinCast(lightSourceTile, tilemapConfig);
+    })
   );
 
-  const tileMapCommands$: Observable<LightCastCommand> = algorithm$.pipe(
-    switchMap((algorithm) => {
-      const commands$ = iif(
-        () => algorithm === "RayCast",
-        rayCastCommands$,
-        twinCastCommands$
-      );
-
-      return zip(tick$, commands$).pipe(
-        map(([_, command]) => command),
-        startWith({ type: "resetLights" } as ResetLightsCommand)
+  const nextCommand$: Observable<LightCastCommand> = tileMapCommands$.pipe(
+    switchMap((commands) => {
+      const firstCommand = { type: "resetLights" } as LightCastCommand;
+      return tick$.pipe(
+        mapTo(true),
+        scan(
+          ({ forwardBuffer, backwardBuffer, current }, isForward) => {
+            const next = isForward ? forwardBuffer[0] : backwardBuffer[0];
+            if (next !== undefined) {
+              return {
+                forwardBuffer: isForward
+                  ? [...forwardBuffer.slice(1)]
+                  : [...forwardBuffer, current],
+                backwardBuffer: isForward
+                  ? [...backwardBuffer, current]
+                  : [...backwardBuffer.slice(1)],
+                current: next,
+              };
+            } else {
+              return { forwardBuffer, backwardBuffer, current };
+            }
+          },
+          {
+            current: firstCommand,
+            forwardBuffer: commands,
+            backwardBuffer: [] as LightCastCommand[],
+          }
+        ),
+        filter(({ current }) => current !== undefined),
+        map(({ current }) => current),
+        startWith(firstCommand)
       );
     }),
     share()
   );
 
   return {
-    nextCommand$: tileMapCommands$,
+    nextCommand$,
     lightSourceTile$,
     hoveredTile$,
     tilemapConfig$,
