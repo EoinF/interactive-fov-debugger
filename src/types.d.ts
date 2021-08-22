@@ -18,6 +18,11 @@ export type SetLightCommand = {
   tileX: number;
   tileY: number;
 };
+export type ClearLightCommand = {
+  type: "clearLight";
+  tileX: number;
+  tileY: number;
+};
 
 export type ResetLightsCommand = {
   type: "resetLights";
@@ -29,5 +34,6 @@ export type SetLinesCommand = {
 };
 export type LightCastCommand =
   | SetLightCommand
+  | ClearLightCommand
   | SetLinesCommand
   | ResetLightsCommand;

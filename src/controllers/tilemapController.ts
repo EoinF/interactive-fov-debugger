@@ -12,7 +12,7 @@ import {
 } from "rxjs/operators";
 import { rayCast } from "../rayCast/rayCast";
 import { twinCast } from "../twinCast/twinCast";
-import { LightCastCommand, TilemapConfig } from "../types";
+import { ClearLightCommand, LightCastCommand, TilemapConfig } from "../types";
 import { InputController } from "./inputController";
 import { PlaybackController } from "./playbackController";
 
@@ -77,7 +77,7 @@ export const createTilemapController = (
         scan(
           ({ forwardBuffer, backwardBuffer, current }, isForward) => {
             const next = isForward ? forwardBuffer[0] : backwardBuffer[0];
-            if (next !== undefined) {
+            if (current !== undefined) {
               return {
                 forwardBuffer: isForward
                   ? [...forwardBuffer.slice(1)]
@@ -86,19 +86,26 @@ export const createTilemapController = (
                   ? [...backwardBuffer, current]
                   : [...backwardBuffer.slice(1)],
                 current: next,
+                isForward,
               };
             } else {
-              return { forwardBuffer, backwardBuffer, current };
+              return { forwardBuffer, backwardBuffer, current, isForward };
             }
           },
           {
             current: firstCommand,
             forwardBuffer: commands,
             backwardBuffer: [] as LightCastCommand[],
+            isForward: true,
           }
         ),
         filter(({ current }) => current !== undefined),
-        map(({ current }) => current),
+        map(({ current, isForward }) => {
+          if (!isForward && current.type === "setLight") {
+            return { ...current, type: "clearLight" } as ClearLightCommand;
+          }
+          return current;
+        }),
         startWith(firstCommand)
       );
     }),
